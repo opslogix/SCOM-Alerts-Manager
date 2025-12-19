@@ -24,7 +24,6 @@ coverage/
 *.tmp
 *.swp
 # Package lock files (optional, depending on your workflow)
-package-lock.json
 yarn.lock
 # Optional npm debug files
 npmrc
