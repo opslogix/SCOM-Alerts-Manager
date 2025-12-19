@@ -1,0 +1,37 @@
+{
+  "$schema": "https://raw.githubusercontent.com/grafana/grafana/main/docs/sources/developers/plugins/plugin.schema.json",
+  "type": "app",
+  "name": "SCOM Alerts Manager",
+  "id": "opslogix-scomalerts-app",
+  "backend": true,
+  "executable": "gpx_scom_plugin_by_opslogix",
+  "info": {
+    "description": "SCOM Alerts Management Application",
+    "author": {
+      "name": "Opslogix"
+    },
+    "keywords": ["scom", "alerts", "monitoring"],
+    "logos": {
+      "small": "img/logo.svg",
+      "large": "img/logo.svg"
+    },
+    "links": [],
+    "screenshots": [],
+    "version": "%VERSION%",
+    "updated": "%TODAY%"
+  },
+  "includes": [
+    {
+      "type": "page",
+      "name": "SCOM Alerts",
+      "path": "/a/opslogix-scomalerts-app",
+      "role": "Viewer",
+      "addToNav": true,
+      "defaultNav": true
+    }
+  ],
+  "dependencies": {
+    "grafanaDependency": ">=10.4.0",
+    "plugins": []
+  }
+}
