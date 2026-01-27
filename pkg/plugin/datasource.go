@@ -27,19 +27,13 @@ var (
 )
 
 // NewDatasource creates a new datasource instance for each unique configuration
-func NewDatasource(ctx context.Context, settings backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
-
-	httpClientOptions, err := settings.HTTPClientOptions(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("http client options: %w", err)
-	}
-
+func NewDatasource(_ context.Context, settings backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
 	pluginSettings, err := models.LoadPluginSettings(settings)
 	if err != nil {
 		return nil, fmt.Errorf("plugin settings: %w", err)
 	}
 
-	client, err := NewScomClient(httpClientOptions, pluginSettings)
+	client, err := NewScomClient(pluginSettings)
 	if err != nil {
 		return nil, fmt.Errorf("scom client initialization: %w", err)
 	}

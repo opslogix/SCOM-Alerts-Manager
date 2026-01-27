@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/grafana/grafana-plugin-sdk-go/backend/httpclient"
+	"github.com/Azure/go-ntlmssp"
 	"github.com/opslogix/scom-plugin-by-opslogix/pkg/models"
 )
 
@@ -23,96 +23,56 @@ type ScomClient struct {
 	mu         sync.Mutex
 }
 
-// NewScomClient initializes a scom client with authentication middleware
-func NewScomClient(httpOptions httpclient.Options, settings *models.PluginSettings) (*ScomClient, error) {
-	//Authenticate
+// NewScomClient initializes a scom client with NTLM authentication
+func NewScomClient(settings *models.PluginSettings) (*ScomClient, error) {
 	tokens, err := Authenticate(settings.Url, settings.UserName, settings.Secrets.Password, settings.IsSkipTlsVerifyCheck)
 	if err != nil {
 		return nil, fmt.Errorf("failed to authenticate: %v", err)
 	}
 
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: settings.IsSkipTlsVerifyCheck},
+	}
+
+	ntlmTransport := &ntlmssp.Negotiator{
+		RoundTripper: tr,
+	}
+
+	httpClient := &http.Client{
+		Transport: ntlmTransport,
+		Timeout:   10 * time.Second,
+	}
+
 	client := &ScomClient{
-		settings: settings,
-		tokens:   tokens,
+		settings:   settings,
+		tokens:     tokens,
+		httpClient: httpClient,
 	}
-
-	httpOptions.ConfigureTLSConfig = func(opts httpclient.Options, tlsConfig *tls.Config) {
-		tlsConfig.InsecureSkipVerify = settings.IsSkipTlsVerifyCheck
-	}
-
-	httpOptions.Middlewares = append(httpOptions.Middlewares, httpclient.MiddlewareFunc(client.AuthMiddleware()))
-	httpOptions.Timeouts.Timeout = time.Second * 10
-
-	httpClient, err := httpclient.New(httpOptions)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create HTTP client: %v", err)
-	}
-
-	client.httpClient = httpClient
 
 	return client, nil
 }
 
-func (c *ScomClient) AuthMiddleware() httpclient.MiddlewareFunc {
-	return httpclient.MiddlewareFunc(func(opts httpclient.Options, next http.RoundTripper) http.RoundTripper {
-		return httpclient.RoundTripperFunc(func(req *http.Request) (*http.Response, error) {
-			var bodyBytes []byte
-			if req.Body != nil {
-				var err error
-				bodyBytes, err = io.ReadAll(req.Body)
-				if err != nil {
-					return nil, fmt.Errorf("failed to read request body: %v", err)
-				}
-				req.Body = io.NopCloser(bytes.NewReader(bodyBytes)) // Restore body for first request
-			}
+// setAuthHeaders sets the required authentication headers on a request
+func (c *ScomClient) setAuthHeaders(req *http.Request) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	// Set NTLM credentials (used by ntlmssp.Negotiator)
+	req.SetBasicAuth(c.settings.UserName, c.settings.Secrets.Password)
+	req.Header.Set("SCOM-CSRF-TOKEN", c.tokens.CSRFToken)
+	req.Header.Set("Cookie", c.tokens.SessionID)
+	req.Header.Set("Content-Type", "application/json")
+}
 
-			// Lock while accessing tokens
-			c.mu.Lock()
-			authToken := c.tokens.AuthToken
-			csrfToken := c.tokens.CSRFToken
-			sessionID := c.tokens.SessionID
-			c.mu.Unlock()
-
-			req.Header.Set("Authorization", "Basic "+authToken)
-			req.Header.Set("SCOM-CSRF-TOKEN", csrfToken)
-			req.Header.Set("Cookie", sessionID)
-			req.Header.Set("Content-Type", "application/json")
-
-			resp, err := next.RoundTrip(req)
-
-			if err != nil {
-				return resp, err
-			}
-
-			if resp.StatusCode == 440 {
-				c.mu.Lock()
-				defer c.mu.Unlock()
-
-				if authToken == c.tokens.AuthToken {
-					newTokens, err := Authenticate(c.settings.Url, c.settings.UserName, c.settings.Secrets.Password, c.settings.IsSkipTlsVerifyCheck)
-					if err != nil {
-						return resp, fmt.Errorf("failed to refresh authentication tokens: %v", err)
-					}
-					c.tokens = newTokens
-				}
-
-				// Retry request with new tokens
-				req2 := req.Clone(req.Context())
-				if len(bodyBytes) > 0 {
-					req2.Body = io.NopCloser(bytes.NewReader(bodyBytes))
-				}
-
-				req2.Header.Set("Authorization", "Basic "+c.tokens.AuthToken)
-				req2.Header.Set("SCOM-CSRF-TOKEN", c.tokens.CSRFToken)
-				req2.Header.Set("Cookie", c.tokens.SessionID)
-				req2.Header.Set("Content-Type", "application/json")
-
-				return next.RoundTrip(req2)
-			}
-
-			return resp, nil
-		})
-	})
+// refreshTokens re-authenticates and updates the stored tokens
+func (c *ScomClient) refreshTokens() error {
+	newTokens, err := Authenticate(c.settings.Url, c.settings.UserName, c.settings.Secrets.Password, c.settings.IsSkipTlsVerifyCheck)
+	if err != nil {
+		return fmt.Errorf("failed to refresh authentication tokens: %v", err)
+	}
+	c.mu.Lock()
+	c.tokens = newTokens
+	c.mu.Unlock()
+	return nil
 }
 
 func requestToType[T any](client *ScomClient, method, endpoint string, body interface{}) (T, error) {
@@ -145,21 +105,22 @@ func requestToType[T any](client *ScomClient, method, endpoint string, body inte
 
 // Request performs an HTTP request and returns the response content as a generic type.
 func (c *ScomClient) request(method, endpoint string, body interface{}) (*http.Response, error) {
-	var reqBody io.Reader
+	var bodyBytes []byte
 	if body != nil {
-		// Marshal the body to JSON
-		jsonData, err := json.Marshal(body)
+		var err error
+		bodyBytes, err = json.Marshal(body)
 		if err != nil {
 			return nil, fmt.Errorf("failed to marshal request body: %w", err)
 		}
-		reqBody = bytes.NewBuffer(jsonData)
 	}
 
 	// Create the HTTP request
-	req, err := http.NewRequest(method, c.settings.Url+endpoint, reqBody)
+	req, err := http.NewRequest(method, c.settings.Url+endpoint, bytes.NewReader(bodyBytes))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
+
+	c.setAuthHeaders(req)
 
 	// Send the request
 	resp, err := c.httpClient.Do(req)
@@ -167,7 +128,22 @@ func (c *ScomClient) request(method, endpoint string, body interface{}) (*http.R
 		return nil, err
 	}
 
-	return resp, err
+	// Handle session expiration (440)
+	if resp.StatusCode == 440 {
+		if err := c.refreshTokens(); err != nil {
+			return resp, err
+		}
+
+		// Retry with new tokens
+		req2, err := http.NewRequest(method, c.settings.Url+endpoint, bytes.NewReader(bodyBytes))
+		if err != nil {
+			return nil, fmt.Errorf("failed to create retry request: %w", err)
+		}
+		c.setAuthHeaders(req2)
+		return c.httpClient.Do(req2)
+	}
+
+	return resp, nil
 }
 
 // https://learn.microsoft.com/en-us/rest/api/operationsmanager/data/retrieves-alert-data?tabs=HTTP
