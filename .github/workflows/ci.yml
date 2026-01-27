@@ -114,8 +114,10 @@ jobs:
 
       - name: Check datasource plugin.json
         run: |
-          # Create a temporary zip for validation
-          cd dist/datasource && zip -r ../../datasource-check.zip . && cd ../..
+          # Create a properly structured zip for validation (validator expects single directory named after plugin id)
+          mkdir -p opslogix-scomalerts-datasource
+          cp -r dist/datasource/* opslogix-scomalerts-datasource/
+          zip -r datasource-check.zip opslogix-scomalerts-datasource
           docker run --pull=always \
             -v $PWD/datasource-check.zip:/archive.zip \
             grafana/plugin-validator-cli -analyzer=metadatavalid /archive.zip
