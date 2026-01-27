@@ -5,6 +5,7 @@
   "id": "opslogix-scomalerts-datasource",
   "backend": true,
   "executable": "gpx_scom_datasource",
+  "metrics": true,
   "alerting": false,
   "info": {
     "description": "SCOM Operations Manager DataSource for alerts and monitoring",

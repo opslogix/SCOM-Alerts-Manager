@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+
+	"github.com/Azure/go-ntlmssp"
 )
 
 type AuthTokens struct {
@@ -29,16 +31,18 @@ func Authenticate(baseUrl string, userName string, password string, IsSkipTlsVer
 	basicToken := base64.StdEncoding.EncodeToString([]byte(pair))
 
 	scomAuthNUri := baseUrl + "/OperationsManager/authenticate"
-	scomHeader := map[string]string{
-		"Content-Type":  "application/json; charset=utf-8",
-		"Authorization": "Basic " + basicToken,
+
+	// Create an HTTP client with NTLM transport for Windows Authentication
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: IsSkipTlsVerifyCheck},
 	}
 
-	// Create an HTTP client with custom TLS configuration to disable SSL certificate validation.
+	ntlmTransport := &ntlmssp.Negotiator{
+		RoundTripper: tr,
+	}
+
 	client := &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: IsSkipTlsVerifyCheck},
-		},
+		Transport: ntlmTransport,
 	}
 
 	body := bytes.NewBufferString(scomAuthNBody)
@@ -48,9 +52,9 @@ func Authenticate(baseUrl string, userName string, password string, IsSkipTlsVer
 		return result, err
 	}
 
-	for key, value := range scomHeader {
-		req.Header.Set(key, value)
-	}
+	// Set NTLM credentials via Basic Auth header (ntlmssp.Negotiator uses this)
+	req.SetBasicAuth(userName, password)
+	req.Header.Set("Content-Type", "application/json; charset=utf-8")
 
 	resp, err := client.Do(req)
 	if err != nil {
