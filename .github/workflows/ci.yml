@@ -93,31 +93,40 @@ jobs:
         run: |
           sudo apt-get install jq
 
-          export GRAFANA_PLUGIN_ID=$(cat dist/plugin.json | jq -r .id)
-          export GRAFANA_PLUGIN_VERSION=$(cat dist/plugin.json | jq -r .info.version)
-          export GRAFANA_PLUGIN_ARTIFACT=${GRAFANA_PLUGIN_ID}-${GRAFANA_PLUGIN_VERSION}.zip
+          # Get metadata from datasource plugin (primary)
+          export GRAFANA_PLUGIN_ID=$(cat dist/datasource/plugin.json | jq -r .id)
+          export GRAFANA_PLUGIN_VERSION=$(cat dist/datasource/plugin.json | jq -r .info.version)
+          export GRAFANA_PLUGIN_ARTIFACT=opslogix-scomalerts-${GRAFANA_PLUGIN_VERSION}.zip
 
           echo "plugin-id=${GRAFANA_PLUGIN_ID}" >> $GITHUB_OUTPUT
           echo "plugin-version=${GRAFANA_PLUGIN_VERSION}" >> $GITHUB_OUTPUT
           echo "archive=${GRAFANA_PLUGIN_ARTIFACT}" >> $GITHUB_OUTPUT
 
-      - name: Package plugin
+      - name: Package plugins
         id: package-plugin
         run: |
-          mv dist ${{ steps.metadata.outputs.plugin-id }}
-          zip ${{ steps.metadata.outputs.archive }} ${{ steps.metadata.outputs.plugin-id }} -r
+          # Package both plugins into separate folders
+          mkdir -p opslogix-scomalerts-datasource
+          mkdir -p opslogix-scomalerts-panel
+          cp -r dist/datasource/* opslogix-scomalerts-datasource/
+          cp -r dist/panel/* opslogix-scomalerts-panel/
+          zip ${{ steps.metadata.outputs.archive }} opslogix-scomalerts-datasource opslogix-scomalerts-panel -r
 
-      - name: Check plugin.json
+      - name: Check datasource plugin.json
         run: |
+          # Create a temporary zip for validation
+          cd dist/datasource && zip -r ../../datasource-check.zip . && cd ../..
           docker run --pull=always \
-            -v $PWD/${{ steps.metadata.outputs.archive }}:/archive.zip \
+            -v $PWD/datasource-check.zip:/archive.zip \
             grafana/plugin-validator-cli -analyzer=metadatavalid /archive.zip
 
       - name: Archive Build
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ steps.metadata.outputs.plugin-id }}-${{ steps.metadata.outputs.plugin-version }}
-          path: ${{ steps.metadata.outputs.plugin-id }}
+          name: opslogix-scomalerts-${{ steps.metadata.outputs.plugin-version }}
+          path: |
+            opslogix-scomalerts-datasource
+            opslogix-scomalerts-panel
           retention-days: 5
 
       - name: Upload stats.json artifact
