@@ -19,13 +19,14 @@ services:
     cap_add:
       - SYS_PTRACE
     volumes:
-      - ../dist:/var/lib/grafana/plugins/opslogix-scompluginbyopslogix-datasource
+      - ../dist/datasource:/var/lib/grafana/plugins/opslogix-scomalerts-datasource
+      - ../dist/panel:/var/lib/grafana/plugins/opslogix-scomalerts-panel
       - ../provisioning:/etc/grafana/provisioning
-      - ..:/root/opslogix-scompluginbyopslogix-datasource
+      - ..:/root/opslogix-scomalerts
 
     environment:
       NODE_ENV: development
-      GF_LOG_FILTERS: plugin.opslogix-scomalerts-app:debug
+      GF_LOG_FILTERS: plugin.opslogix-scomalerts-datasource:debug
       GF_LOG_LEVEL: debug
       GF_DATAPROXY_LOGGING: 1
-      GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS: opslogix-scomalerts-app
+      GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS: opslogix-scomalerts-datasource,opslogix-scomalerts-panel

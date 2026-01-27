@@ -2,7 +2,7 @@ import { DataSourceJsonData } from '@grafana/data';
 import { DataQuery } from '@grafana/schema';
 
 export interface ScomQuery extends DataQuery {
-  type: 'state' | 'alerts' | 'performance'
+  type: 'state' | 'alerts' | 'performance';
 }
 
 export interface StateQuery extends ScomQuery {
@@ -25,11 +25,6 @@ export interface PerformanceQuery extends ScomQuery {
   instances?: MonitoringObject[];
 }
 
-export const DEFAULT_QUERY: Partial<AlertQuery> = {
-  type: 'alerts',
-  criteria: 'Severity = 2 AND ResolutionState = 0'
-};
-
 export interface ResolutionState {
   label: string;
   value: string;
@@ -42,9 +37,6 @@ export interface ColumnConfig {
   order: number;
 }
 
-/**
- * These are options configured for each DataSource instance
- */
 export interface ScomDataSourceOptions extends DataSourceJsonData {
   url?: string;
   userName?: string;
@@ -54,14 +46,10 @@ export interface ScomDataSourceOptions extends DataSourceJsonData {
   columnConfig?: ColumnConfig[];
 }
 
-/**
- * Value that is used in the backend, but never sent over HTTP to the frontend
- */
 export interface SecureJsonData {
   password: string;
 }
 
-// Data types.
 export interface PerformanceCounter {
   objectName: string;
   counterName: string;
@@ -91,3 +79,13 @@ export type MonitoringGroup = {
   path: null | string;
   fullname: string;
 };
+
+export interface ScomAlert {
+  id: string;
+  name: string;
+  severity: string;
+  description: string;
+  objectDisplayName: string;
+  age: string;
+  resolutionState: string;
+}

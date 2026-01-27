@@ -1,0 +1,25 @@
+{
+  "$schema": "https://raw.githubusercontent.com/grafana/grafana/main/docs/sources/developers/plugins/plugin.schema.json",
+  "type": "panel",
+  "name": "SCOM Alerts Table",
+  "id": "opslogix-scomalerts-panel",
+  "info": {
+    "description": "Interactive SCOM Alerts table with resolution state management",
+    "author": {
+      "name": "Opslogix"
+    },
+    "keywords": ["scom", "alerts", "table", "panel"],
+    "logos": {
+      "small": "img/logo.svg",
+      "large": "img/logo.svg"
+    },
+    "links": [],
+    "screenshots": [],
+    "version": "%VERSION%",
+    "updated": "%TODAY%"
+  },
+  "dependencies": {
+    "grafanaDependency": ">=10.4.0",
+    "plugins": []
+  }
+}

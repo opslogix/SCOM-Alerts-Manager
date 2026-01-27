@@ -144,6 +144,9 @@ func (d *ScomDatasource) handleQuery(query backend.DataQuery) (data.Frames, erro
 				return nil, fmt.Errorf("failed to get alerts: %w", err)
 			}
 			backend.Logger.Info("Successfully fetched alerts", "count", len(alerts.Rows))
+			if len(alerts.Rows) > 0 {
+				backend.Logger.Info("First alert raw data", "id", alerts.Rows[0].ID, "name", alerts.Rows[0].Name, "resolutionState", alerts.Rows[0].ResolutionState)
+			}
 			return d.buildAlertsFrame(alerts), nil
 		}
 	case models.PerformanceQuery:
@@ -243,6 +246,7 @@ func (d *ScomDatasource) buildAlertsFrame(alerts models.ScomAlert) data.Frames {
 		alertRepeatCounts[i] = alert.RepeatCount
 		alertDescriptions[i] = alert.Description
 		alertResolutionStates[i] = alert.ResolutionState
+		backend.Logger.Info("Alert data", "id", alert.ID, "name", alert.Name, "resolutionState", alert.ResolutionState)
 	}
 
 	frame.Fields = append(frame.Fields,
@@ -361,97 +365,108 @@ func (d *ScomDatasource) buildHealthStateGroupFrame(healthStateGroup models.Stat
 	return data.Frames{frame}
 }
 
-// Called from datasource.getResource() from the frontend.
+// Called from datasource.getResource() and datasource.postResource() from the frontend.
 func (d *ScomDatasource) CallResource(ctx context.Context, req *backend.CallResourceRequest, sender backend.CallResourceResponseSender) error {
 	parsedURL, err := url.Parse(req.URL)
 	if err != nil {
-		return fmt.Errorf("failed to parse URL: %w", err)
+		return sendJSONError(sender, http.StatusBadRequest, "failed to parse URL")
 	}
 
 	query := parsedURL.Query()
 
-	handlers := map[string]func() (interface{}, error){
-		"alerts": func() (interface{}, error) {
-			criteria := query.Get("criteria")
-			if criteria == "" {
-				criteria = "ResolutionState = 0"
-			}
-			backend.Logger.Info("CallResource: Fetching alerts", "criteria", criteria)
-			alerts, err := d.client.GetAlerts(criteria)
-			if err != nil {
-				backend.Logger.Error("CallResource: Failed to get alerts", "error", err)
-				return nil, err
-			}
-
-			// Convert to simple JSON array
-			type AlertJSON struct {
-				ID                string `json:"id"`
-				Name              string `json:"name"`
-				Severity          string `json:"severity"`
-				Description       string `json:"description"`
-				ObjectDisplayName string `json:"objectDisplayName"`
-				Age               string `json:"age"`
-				ResolutionState   string `json:"resolutionState"`
-			}
-
-			alertsJSON := make([]AlertJSON, len(alerts.Rows))
-			for i, alert := range alerts.Rows {
-				alertsJSON[i] = AlertJSON{
-					ID:                alert.ID,
-					Name:              alert.Name,
-					Severity:          alert.Severity,
-					Description:       alert.Description,
-					ObjectDisplayName: alert.MonitoringObject,
-					Age:               alert.Age,
-					ResolutionState:   alert.ResolutionState,
-				}
-			}
-
-			backend.Logger.Info("CallResource: Returning alerts", "count", len(alertsJSON))
-			return alertsJSON, nil
-		},
-		"updateAlertResolutionState": func() (interface{}, error) {
-			alertId := query.Get("alertId")
-			resolutionState := query.Get("resolutionState")
-			if alertId == "" || resolutionState == "" {
-				return nil, fmt.Errorf("alertId and resolutionState are required")
-			}
-			err := d.client.UpdateAlertResolutionState(alertId, resolutionState)
-			if err != nil {
-				return nil, err
-			}
-			return map[string]string{"status": "success"}, nil
-		},
+	switch req.Path {
+	case "alerts":
+		return d.handleGetAlerts(query, sender)
+	case "updateAlertResolutionState":
+		return d.handleUpdateAlertResolutionState(req.Body, sender)
+	default:
+		return sendJSONError(sender, http.StatusNotFound, "not found")
 	}
+}
 
-	handler, exists := handlers[req.Path]
-	if !exists {
-		return sender.Send(&backend.CallResourceResponse{
-			Status: http.StatusNotFound,
-			Body:   []byte("not Found"),
-		})
+func (d *ScomDatasource) handleGetAlerts(query url.Values, sender backend.CallResourceResponseSender) error {
+	criteria := query.Get("criteria")
+	if criteria == "" {
+		criteria = "ResolutionState = 0"
 	}
-
-	result, err := handler()
+	backend.Logger.Info("CallResource: Fetching alerts", "criteria", criteria)
+	alerts, err := d.client.GetAlerts(criteria)
 	if err != nil {
-		return sender.Send(&backend.CallResourceResponse{
-			Status: http.StatusBadRequest,
-			Body:   []byte(fmt.Sprintf("error: %v", err.Error())),
-		})
+		backend.Logger.Error("CallResource: Failed to get alerts", "error", err)
+		return sendJSONError(sender, http.StatusBadRequest, err.Error())
 	}
 
-	data, err := json.Marshal(result)
+	// Convert to simple JSON array
+	type AlertJSON struct {
+		ID                string `json:"id"`
+		Name              string `json:"name"`
+		Severity          string `json:"severity"`
+		Description       string `json:"description"`
+		ObjectDisplayName string `json:"objectDisplayName"`
+		Age               string `json:"age"`
+		ResolutionState   string `json:"resolutionState"`
+	}
+
+	alertsJSON := make([]AlertJSON, len(alerts.Rows))
+	for i, alert := range alerts.Rows {
+		alertsJSON[i] = AlertJSON{
+			ID:                alert.ID,
+			Name:              alert.Name,
+			Severity:          alert.Severity,
+			Description:       alert.Description,
+			ObjectDisplayName: alert.MonitoringObject,
+			Age:               alert.Age,
+			ResolutionState:   alert.ResolutionState,
+		}
+	}
+
+	backend.Logger.Info("CallResource: Returning alerts", "count", len(alertsJSON))
+	return sendJSONResponse(sender, http.StatusOK, alertsJSON)
+}
+
+func (d *ScomDatasource) handleUpdateAlertResolutionState(body []byte, sender backend.CallResourceResponseSender) error {
+	// Parse request body
+	var requestBody struct {
+		AlertID         string `json:"alertId"`
+		ResolutionState string `json:"resolutionState"`
+	}
+
+	if err := json.Unmarshal(body, &requestBody); err != nil {
+		backend.Logger.Error("CallResource: Failed to parse request body", "error", err, "body", string(body))
+		return sendJSONError(sender, http.StatusBadRequest, "invalid request body: "+err.Error())
+	}
+
+	if requestBody.AlertID == "" || requestBody.ResolutionState == "" {
+		return sendJSONError(sender, http.StatusBadRequest, "alertId and resolutionState are required")
+	}
+
+	backend.Logger.Info("CallResource: Updating alert resolution state", "alertId", requestBody.AlertID, "resolutionState", requestBody.ResolutionState)
+
+	err := d.client.UpdateAlertResolutionState(requestBody.AlertID, requestBody.ResolutionState)
+	if err != nil {
+		backend.Logger.Error("CallResource: Failed to update alert resolution state", "error", err)
+		return sendJSONError(sender, http.StatusBadRequest, err.Error())
+	}
+
+	return sendJSONResponse(sender, http.StatusOK, map[string]string{"status": "success"})
+}
+
+func sendJSONResponse(sender backend.CallResourceResponseSender, status int, data interface{}) error {
+	body, err := json.Marshal(data)
 	if err != nil {
 		return sender.Send(&backend.CallResourceResponse{
 			Status: http.StatusInternalServerError,
-			Body:   []byte("failed to marshal response"),
+			Body:   []byte(`{"error":"failed to marshal response"}`),
 		})
 	}
-
 	return sender.Send(&backend.CallResourceResponse{
-		Status: http.StatusOK,
-		Body:   data,
+		Status: status,
+		Body:   body,
 	})
+}
+
+func sendJSONError(sender backend.CallResourceResponseSender, status int, message string) error {
+	return sendJSONResponse(sender, status, map[string]string{"error": message})
 }
 
 // This function is called when user enters name, password and url for using the plugin.
@@ -496,7 +511,8 @@ func ParseQuery(jsonData []byte) (interface{}, error) {
 			return nil, err
 		}
 		return q, nil
-	case "alerts":
+	case "alerts", "":
+		// Default to alerts query when type is empty (for backward compatibility)
 		var q models.AlertQuery
 		if err := json.Unmarshal(jsonData, &q); err != nil {
 			backend.Logger.Error("Failed to unmarshal alert query", "error", err)
@@ -510,9 +526,6 @@ func ParseQuery(jsonData []byte) (interface{}, error) {
 			return nil, err
 		}
 		return q, nil
-	case "":
-		backend.Logger.Warn("Empty query type received")
-		return nil, fmt.Errorf("query type is empty")
 	default:
 		backend.Logger.Error("Unknown query type", "type", base.Type)
 		return nil, fmt.Errorf("unknown query type: %s", base.Type)

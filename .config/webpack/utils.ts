@@ -26,7 +26,19 @@ export function getPackageJson() {
 }
 
 export function getPluginJson() {
-  return require(path.resolve(process.cwd(), `${SOURCE_DIR}/plugin.json`));
+  // First try the traditional location
+  const rootPluginJson = path.resolve(process.cwd(), `${SOURCE_DIR}/plugin.json`);
+  if (fs.existsSync(rootPluginJson)) {
+    return require(rootPluginJson);
+  }
+
+  // For monorepo with nested plugins, find the first plugin.json (usually datasource)
+  const nestedPlugins = glob.sync(`${SOURCE_DIR}/**/plugin.json`, { cwd: process.cwd() });
+  if (nestedPlugins.length > 0) {
+    return require(path.resolve(process.cwd(), nestedPlugins[0]));
+  }
+
+  throw new Error('No plugin.json found');
 }
 
 export function getCPConfigVersion() {
