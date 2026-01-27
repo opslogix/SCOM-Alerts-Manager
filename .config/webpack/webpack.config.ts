@@ -200,7 +200,7 @@ const config = async (env): Promise<Configuration> => {
           // If src/README.md exists use it; otherwise the root README
           // To `compiler.options.output`
           { from: hasReadme() ? 'README.md' : '../README.md', to: '.', force: true },
-          { from: 'plugin.json', to: '.' },
+          { from: 'plugin.json', to: '.', noErrorOnMissing: true },
           { from: '../LICENSE', to: '.' },
           { from: '../CHANGELOG.md', to: '.', force: true },
           { from: '**/*.json', to: '.' },
@@ -217,7 +217,7 @@ const config = async (env): Promise<Configuration> => {
       new ReplaceInFileWebpackPlugin([
         {
           dir: DIST_DIR,
-          files: ['plugin.json', 'README.md'],
+          files: ['datasource/plugin.json', 'panel/plugin.json', 'README.md'],
           rules: [
             {
               search: /\%VERSION\%/g,

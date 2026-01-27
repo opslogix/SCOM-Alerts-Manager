@@ -1,5 +1,15 @@
 services:
   grafana:
-    extends:
-      file: .config/docker-compose-base.yaml
-      service: grafana
+    image: grafana/grafana-enterprise:11.5.1
+    container_name: 'scom-plugin-by-opslogix'
+    ports:
+      - 3000:3000/tcp
+    volumes:
+      - ./dist/datasource:/var/lib/grafana/plugins/opslogix-scomalerts-datasource
+      - ./dist/panel:/var/lib/grafana/plugins/opslogix-scomalerts-panel
+      - ./provisioning:/etc/grafana/provisioning
+    environment:
+      GF_LOG_FILTERS: plugin.opslogix-scomalerts-datasource:debug
+      GF_LOG_LEVEL: debug
+      GF_DATAPROXY_LOGGING: 1
+      GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS: opslogix-scomalerts-datasource,opslogix-scomalerts-panel

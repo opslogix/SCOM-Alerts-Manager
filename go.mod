@@ -1,12 +1,13 @@
 module github.com/opslogix/scom-plugin-by-opslogix
 
-go 1.22.7
+go 1.24
 
-toolchain go1.23.4
+toolchain go1.24.2
 
 require github.com/grafana/grafana-plugin-sdk-go v0.263.0
 
 require (
+	github.com/Azure/go-ntlmssp v0.1.0 // indirect
 	github.com/BurntSushi/toml v1.4.0 // indirect
 	github.com/apache/arrow-go/v18 v18.0.1-0.20241212180703-82be143d7c30 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
