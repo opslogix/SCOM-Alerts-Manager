@@ -1,7 +1,7 @@
 services:
   grafana:
     user: root
-    container_name: 'opslogix-scompluginbyopslogix-datasource'
+    container_name: 'scom-plugin-by-opslogix'
 
     build:
       context: ./
