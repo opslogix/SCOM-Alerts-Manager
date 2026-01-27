@@ -1,0 +1,14 @@
+{
+  "extends": "@grafana/tsconfig",
+  "compilerOptions": {
+    "rootDir": "../src",
+    "baseUrl": "../src",
+    "skipLibCheck": true,
+    "noImplicitAny": false,
+    "strict": false,
+    "module": "CommonJS",
+    "moduleResolution": "node"
+  },
+  "include": ["../src/**/*.ts", "../src/**/*.tsx"],
+  "exclude": ["../node_modules", "../dist"]
+}

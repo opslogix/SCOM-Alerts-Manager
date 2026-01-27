@@ -2,13 +2,19 @@ import React, { ChangeEvent } from 'react';
 import { QueryEditorProps } from '@grafana/data';
 import { InlineField, Input } from '@grafana/ui';
 import { ScomDataSource } from './datasource';
-import { ScomDataSourceOptions, AlertQuery } from '../shared/types';
+import { ScomDataSourceOptions, ScomQuery } from '../shared/types';
 
-type Props = QueryEditorProps<ScomDataSource, AlertQuery, ScomDataSourceOptions>;
+type Props = QueryEditorProps<ScomDataSource, ScomQuery, ScomDataSourceOptions>;
+
+interface AlertQueryFields {
+  criteria?: string;
+}
 
 export function QueryEditor({ query, onChange, onRunQuery }: Props) {
+  const alertQuery = query as ScomQuery & AlertQueryFields;
+
   const onCriteriaChange = (event: ChangeEvent<HTMLInputElement>) => {
-    onChange({ ...query, type: 'alerts', criteria: event.target.value });
+    onChange({ ...query, type: 'alerts', criteria: event.target.value } as ScomQuery & AlertQueryFields);
   };
 
   const onKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -26,7 +32,7 @@ export function QueryEditor({ query, onChange, onRunQuery }: Props) {
         grow
       >
         <Input
-          value={query.criteria || ''}
+          value={alertQuery.criteria || ''}
           onChange={onCriteriaChange}
           onKeyDown={onKeyDown}
           onBlur={onRunQuery}
