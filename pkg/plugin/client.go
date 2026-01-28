@@ -128,8 +128,8 @@ func (c *ScomClient) request(method, endpoint string, body interface{}) (*http.R
 		return nil, err
 	}
 
-	// Handle session expiration (440)
-	if resp.StatusCode == 440 {
+	// Handle session expiration (440) or unauthorized (401)
+	if resp.StatusCode == 440 || resp.StatusCode == 401 {
 		if err := c.refreshTokens(); err != nil {
 			return resp, err
 		}
