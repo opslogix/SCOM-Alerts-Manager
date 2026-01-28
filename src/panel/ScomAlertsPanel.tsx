@@ -41,16 +41,52 @@ export const ScomAlertsPanel: React.FC<Props> = ({ data, options, width, height 
     const objectDisplayNames = getFieldValues('object display name');
     const ages = getFieldValues('age');
     const resolutionStates = getFieldValues('resolution state');
+    const objectPaths = getFieldValues('object path');
+    const priorities = getFieldValues('priority');
+    const timeRaised = getFieldValues('time raised');
+    const timeAdded = getFieldValues('time added');
+    const timeResolved = getFieldValues('time resolved');
+    const maintenanceModes = getFieldValues('maintenance mode');
+    const owners = getFieldValues('owner');
+    const contexts = getFieldValues('context');
+    const customField1 = getFieldValues('custom field 1');
+    const customField2 = getFieldValues('custom field 2');
+    const customField3 = getFieldValues('custom field 3');
+    const customField4 = getFieldValues('custom field 4');
+    const customField5 = getFieldValues('custom field 5');
+    const customField6 = getFieldValues('custom field 6');
+    const customField7 = getFieldValues('custom field 7');
+    const customField8 = getFieldValues('custom field 8');
+    const customField9 = getFieldValues('custom field 9');
+    const customField10 = getFieldValues('custom field 10');
 
     for (let i = 0; i < rowCount; i++) {
       result.push({
-        id: ids[i] || '',
-        name: names[i] || '',
-        severity: String(severities[i] || ''),
-        description: descriptions[i] || '',
-        objectDisplayName: objectDisplayNames[i] || '',
-        age: ages[i] || '',
-        resolutionState: String(resolutionStates[i] || ''),
+        id: ids[i] ?? '',
+        name: names[i] ?? '',
+        severity: String(severities[i] ?? ''),
+        description: descriptions[i] ?? '',
+        objectDisplayName: objectDisplayNames[i] ?? '',
+        age: ages[i] ?? '',
+        resolutionState: String(resolutionStates[i] ?? ''),
+        monitoringObjectPath: objectPaths[i] ?? '',
+        priority: String(priorities[i] ?? ''),
+        timeRaised: timeRaised[i] ?? '',
+        timeAdded: timeAdded[i] ?? '',
+        timeResolved: timeResolved[i] ?? '',
+        maintenanceMode: String(maintenanceModes[i] ?? ''),
+        owner: owners[i] ?? '',
+        context: contexts[i] ?? '',
+        customField1: customField1[i] ?? '',
+        customField2: customField2[i] ?? '',
+        customField3: customField3[i] ?? '',
+        customField4: customField4[i] ?? '',
+        customField5: customField5[i] ?? '',
+        customField6: customField6[i] ?? '',
+        customField7: customField7[i] ?? '',
+        customField8: customField8[i] ?? '',
+        customField9: customField9[i] ?? '',
+        customField10: customField10[i] ?? '',
       });
     }
 
@@ -152,6 +188,42 @@ export const ScomAlertsPanel: React.FC<Props> = ({ data, options, width, height 
         return <td className={styles.idCell}>{alert.id}</td>;
       case 'description':
         return <td className={styles.descriptionCell}>{alert.description}</td>;
+      case 'monitoringobjectpath':
+        return <td>{alert.monitoringObjectPath}</td>;
+      case 'priority':
+        return <td>{alert.priority}</td>;
+      case 'timeraised':
+        return <td>{alert.timeRaised}</td>;
+      case 'timeadded':
+        return <td>{alert.timeAdded}</td>;
+      case 'timeresolved':
+        return <td>{alert.timeResolved}</td>;
+      case 'maintenancemode':
+        return <td>{alert.maintenanceMode}</td>;
+      case 'owner':
+        return <td>{alert.owner}</td>;
+      case 'context':
+        return <td>{alert.context}</td>;
+      case 'customfield1':
+        return <td>{alert.customField1}</td>;
+      case 'customfield2':
+        return <td>{alert.customField2}</td>;
+      case 'customfield3':
+        return <td>{alert.customField3}</td>;
+      case 'customfield4':
+        return <td>{alert.customField4}</td>;
+      case 'customfield5':
+        return <td>{alert.customField5}</td>;
+      case 'customfield6':
+        return <td>{alert.customField6}</td>;
+      case 'customfield7':
+        return <td>{alert.customField7}</td>;
+      case 'customfield8':
+        return <td>{alert.customField8}</td>;
+      case 'customfield9':
+        return <td>{alert.customField9}</td>;
+      case 'customfield10':
+        return <td>{alert.customField10}</td>;
       default:
         return <td></td>;
     }

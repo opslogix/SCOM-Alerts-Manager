@@ -235,6 +235,24 @@ func (d *ScomDatasource) buildAlertsFrame(alerts models.ScomAlert) data.Frames {
 	alertRepeatCounts := make([]int64, rowCount)
 	alertDescriptions := make([]string, rowCount)
 	alertResolutionStates := make([]string, rowCount)
+	alertObjectPaths := make([]string, rowCount)
+	alertPriorities := make([]string, rowCount)
+	alertTimeRaised := make([]string, rowCount)
+	alertTimeAdded := make([]string, rowCount)
+	alertTimeResolved := make([]string, rowCount)
+	alertMaintenanceMode := make([]string, rowCount)
+	alertOwners := make([]string, rowCount)
+	alertContexts := make([]string, rowCount)
+	alertCustomField1 := make([]string, rowCount)
+	alertCustomField2 := make([]string, rowCount)
+	alertCustomField3 := make([]string, rowCount)
+	alertCustomField4 := make([]string, rowCount)
+	alertCustomField5 := make([]string, rowCount)
+	alertCustomField6 := make([]string, rowCount)
+	alertCustomField7 := make([]string, rowCount)
+	alertCustomField8 := make([]string, rowCount)
+	alertCustomField9 := make([]string, rowCount)
+	alertCustomField10 := make([]string, rowCount)
 
 	for i, alert := range alerts.Rows {
 		alertIds[i] = alert.ID
@@ -246,7 +264,25 @@ func (d *ScomDatasource) buildAlertsFrame(alerts models.ScomAlert) data.Frames {
 		alertRepeatCounts[i] = alert.RepeatCount
 		alertDescriptions[i] = alert.Description
 		alertResolutionStates[i] = alert.ResolutionState
-		backend.Logger.Info("Alert data", "id", alert.ID, "name", alert.Name, "resolutionState", alert.ResolutionState)
+		alertObjectPaths[i] = alert.MonitoringObjectPath
+		alertPriorities[i] = strconv.FormatInt(alert.Priority, 10)
+		alertTimeRaised[i] = alert.TimeRaised
+		alertTimeAdded[i] = alert.TimeAdded
+		alertTimeResolved[i] = alert.TimeResolved
+		alertMaintenanceMode[i] = strconv.FormatBool(alert.MonitoringObjectInMaintenanceMode)
+		alertOwners[i] = alert.Owner
+		alertContexts[i] = alert.Context
+		alertCustomField1[i] = alert.CustomField1
+		alertCustomField2[i] = alert.CustomField2
+		alertCustomField3[i] = alert.CustomField3
+		alertCustomField4[i] = alert.CustomField4
+		alertCustomField5[i] = alert.CustomField5
+		alertCustomField6[i] = alert.CustomField6
+		alertCustomField7[i] = alert.CustomField7
+		alertCustomField8[i] = alert.CustomField8
+		alertCustomField9[i] = alert.CustomField9
+		alertCustomField10[i] = alert.CustomField10
+		backend.Logger.Info("Alert data", "id", alert.ID, "name", alert.Name, "resolutionState", alert.ResolutionState, "objectPath", alert.MonitoringObjectPath, "priority", alert.Priority, "timeRaised", alert.TimeRaised)
 	}
 
 	frame.Fields = append(frame.Fields,
@@ -259,6 +295,24 @@ func (d *ScomDatasource) buildAlertsFrame(alerts models.ScomAlert) data.Frames {
 		data.NewField("Ages (milliseconds)", nil, alertAgesMillis),
 		data.NewField("Repeat counts", nil, alertRepeatCounts),
 		data.NewField("Resolution State", nil, alertResolutionStates),
+		data.NewField("Object path", nil, alertObjectPaths),
+		data.NewField("Priority", nil, alertPriorities),
+		data.NewField("Time raised", nil, alertTimeRaised),
+		data.NewField("Time added", nil, alertTimeAdded),
+		data.NewField("Time resolved", nil, alertTimeResolved),
+		data.NewField("Maintenance mode", nil, alertMaintenanceMode),
+		data.NewField("Owner", nil, alertOwners),
+		data.NewField("Context", nil, alertContexts),
+		data.NewField("Custom field 1", nil, alertCustomField1),
+		data.NewField("Custom field 2", nil, alertCustomField2),
+		data.NewField("Custom field 3", nil, alertCustomField3),
+		data.NewField("Custom field 4", nil, alertCustomField4),
+		data.NewField("Custom field 5", nil, alertCustomField5),
+		data.NewField("Custom field 6", nil, alertCustomField6),
+		data.NewField("Custom field 7", nil, alertCustomField7),
+		data.NewField("Custom field 8", nil, alertCustomField8),
+		data.NewField("Custom field 9", nil, alertCustomField9),
+		data.NewField("Custom field 10", nil, alertCustomField10),
 	)
 
 	return data.Frames{frame}

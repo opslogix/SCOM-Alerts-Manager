@@ -88,4 +88,22 @@ export interface ScomAlert {
   objectDisplayName: string;
   age: string;
   resolutionState: string;
+  monitoringObjectPath: string;
+  priority: string;
+  timeRaised: string;
+  timeAdded: string;
+  timeResolved: string;
+  maintenanceMode: string;
+  owner: string;
+  context: string;
+  customField1: string;
+  customField2: string;
+  customField3: string;
+  customField4: string;
+  customField5: string;
+  customField6: string;
+  customField7: string;
+  customField8: string;
+  customField9: string;
+  customField10: string;
 }

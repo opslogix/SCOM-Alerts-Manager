@@ -53,17 +53,35 @@ type ScomAlert struct {
 		Hidden bool   `json:"hidden"`
 	} `json:"tableColumns"`
 	Rows []struct {
-		ID                 string  `json:"id"`
-		Severity           string  `json:"severity"`
-		MonitoringObject   string  `json:"monitoringobjectdisplayname"`
-		Name               string  `json:"name"`
-		Age                string  `json:"age"`
-		AgeInMilliseconds  float64 `json:"ageinmilliseconds"`
-		RepeatCount        int64   `json:"repeatcount"`
-		Description        string  `json:"description"`
-		MonitoringObjectId string  `json:"monitoringobjectid"`
-		MonitoringClassId  string  `json:"monitoringclassid"`
-		ResolutionState    string  `json:"resolutionstate"`
+		ID                              string  `json:"id"`
+		Severity                        string  `json:"severity"`
+		MonitoringObject                string  `json:"monitoringobjectdisplayname"`
+		Name                            string  `json:"name"`
+		Age                             string  `json:"age"`
+		AgeInMilliseconds               float64 `json:"ageinmilliseconds"`
+		RepeatCount                     int64   `json:"repeatcount"`
+		Description                     string  `json:"description"`
+		MonitoringObjectId              string  `json:"monitoringobjectid"`
+		MonitoringClassId               string  `json:"monitoringclassid"`
+		ResolutionState                 string  `json:"resolutionstate"`
+		MonitoringObjectPath            string  `json:"monitoringobjectpath"`
+		Priority                        int64   `json:"priority"`
+		TimeRaised                      string  `json:"timeraised"`
+		TimeAdded                       string  `json:"timeadded"`
+		TimeResolved                    string  `json:"timeresolved"`
+		MonitoringObjectInMaintenanceMode bool   `json:"monitoringobjectinmaintenancemode"`
+		Owner                           string  `json:"owner"`
+		Context                         string  `json:"context"`
+		CustomField1                    string  `json:"customfield1"`
+		CustomField2                    string  `json:"customfield2"`
+		CustomField3                    string  `json:"customfield3"`
+		CustomField4                    string  `json:"customfield4"`
+		CustomField5                    string  `json:"customfield5"`
+		CustomField6                    string  `json:"customfield6"`
+		CustomField7                    string  `json:"customfield7"`
+		CustomField8                    string  `json:"customfield8"`
+		CustomField9                    string  `json:"customfield9"`
+		CustomField10                   string  `json:"customfield10"`
 	} `json:"rows"`
 }
 

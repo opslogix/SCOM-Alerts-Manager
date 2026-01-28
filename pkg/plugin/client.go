@@ -151,7 +151,7 @@ func (c *ScomClient) GetAlerts(criteria string) (models.ScomAlert, error) {
 	// TODO: displayColumns does not include monitoringclassid
 	body := map[string]interface{}{
 		"criteria":       criteria,
-		"displayColumns": []string{"severity", "monitoringobjectdisplayname", "name", "age", "repeatcount", "description", "monitoringobjectid", "monitoringclassid", "resolutionstate"},
+		"displayColumns": []string{"severity", "monitoringobjectdisplayname", "name", "age", "repeatcount", "description", "monitoringobjectid", "monitoringclassid", "resolutionstate", "monitoringobjectpath", "priority", "timeraised", "timeadded", "timeresolved", "monitoringobjectinmaintenancemode", "owner", "context", "customfield1", "customfield2", "customfield3", "customfield4", "customfield5", "customfield6", "customfield7", "customfield8", "customfield9", "customfield10"},
 		"classId":        "",
 	}
 
